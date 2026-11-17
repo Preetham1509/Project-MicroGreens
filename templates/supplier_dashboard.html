@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplier Dashboard - Your Neighborhood Microgreens</title>
+    
+    <!-- Google Fonts & Tailwind -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], serif: ['Fraunces', 'serif'] },
+                    colors: {
+                        brand: { bg: '#F9F8F3', surface: '#EAE7DF', dark: '#19392B', primary: '#194D33', muted: '#4A695C',
+                            tagreq: '#F7E7CE', tagreqtext: '#8C5A2B', tagconf: '#D5E8D4', tagconftext: '#2D5939' }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <style>
+        body { background-color: #F9F8F3; color: #19392B; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="antialiased font-sans">
+    
+    <!-- Since we removed JWT, Django handles the login. If they see this page, they are authenticated. -->
+    <div id="app" class="min-h-screen">
+        <div class="max-w-md mx-auto md:max-w-4xl bg-brand-bg min-h-screen shadow-2xl relative flex flex-col md:flex-row">
+            
+            <!-- Sidebar / Main List -->
+            <div class="w-full md:w-1/2 border-r border-brand-dark/10 h-screen overflow-y-auto hide-scroll flex flex-col">
+                
+                <div class="p-6 border-b border-brand-dark/10">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="leading-tight">
+                            <p class="text-[10px] text-brand-muted uppercase tracking-wider font-semibold">Your Neighborhood</p>
+                            <p class="font-serif font-bold">Microgreens</p>
+                        </div>
+                        <div class="flex gap-4 text-sm font-bold">
+                            <!-- Django handles logout via admin url or a custom one -->
+                            <a href="/admin/logout/" class="border-b border-brand-dark hover:opacity-70">Sign out</a>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-brand-primary uppercase tracking-widest font-bold mb-2">Supplier Portal</p>
+                    <h1 class="font-serif text-4xl font-bold mb-2">Supplier dashboard</h1>
+                    <!-- We get this data directly from Django via Template tag -->
+                    <p class="text-sm border-b border-brand-dark/30 inline-block text-brand-muted">{{ user_email }}</p>
+                </div>
+
+                <div class="p-5 space-y-4 flex-grow">
+                    <!-- Standard browser refresh -->
+                    <button onclick="window.location.reload()" class="px-5 py-2.5 bg-white border border-brand-dark/20 shadow-sm rounded-lg font-bold text-sm hover:bg-brand-surface">
+                        Refresh Orders
+                    </button>
+
+                    <div class="flex justify-between items-center pt-4 mb-4">
+                        <h2 class="font-serif text-2xl font-bold">Order requests</h2>
+                    </div>
+
+                    {% verbatim %}
+                    <!-- Order Cards List (Iterating over Vue data) -->
+                    <div class="space-y-3 pb-8">
+                        <div v-for="order in orders" :key="order.id" 
+                             @click="selectedOrder = order"
+                             :class="['bg-white p-4 rounded-xl border cursor-pointer transition-colors shadow-sm', selectedOrder?.id === order.id ? 'border-brand-primary shadow-md' : 'border-brand-dark/10']">
+                            
+                            <div class="flex justify-between items-start mb-3">
+                                <h3 class="font-bold text-sm">#{{ order.id }}</h3>
+                                <span :class="['text-xs font-bold px-2 py-1 rounded', order.status === 'Requested' ? 'bg-brand-tagreq text-brand-tagreqtext' : 'bg-brand-tagconf text-brand-tagconftext']">
+                                    {{ order.status }}
+                                </span>
+                            </div>
+                            <div class="space-y-1 text-sm mb-3">
+                                <p class="text-brand-dark">{{ order.customer_name }}</p>
+                            </div>
+                            <p class="text-sm font-bold mb-2">{{ order.delivery_preference }}</p>
+                        </div>
+                    </div>
+                    {% endverbatim %}
+                </div>
+            </div>
+
+            <!-- Details Panel -->
+            <div class="hidden md:flex w-full md:w-1/2 bg-white md:bg-transparent min-h-[50vh] md:h-screen p-5 md:p-8 flex-col justify-center items-center">
+                
+                {% verbatim %}
+                <div v-if="!selectedOrder" class="text-center bg-white p-8 rounded-xl border border-brand-dark/10 shadow-sm">
+                    <h2 class="font-serif text-2xl font-bold mb-2">Select an order</h2>
+                    <p class="text-brand-muted">Order details, delivery updates, and messages will appear here.</p>
+                </div>
+
+                <div v-else class="w-full bg-white md:rounded-xl md:border md:border-brand-dark/10 md:shadow-sm p-0 md:p-6 flex-grow md:flex-grow-0 overflow-y-auto hide-scroll">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <p class="text-xs text-brand-muted mb-1">ORDER ID</p>
+                            <h2 class="font-serif text-xl font-bold">#{{ selectedOrder.id }}</h2>
+                        </div>
+                         <span :class="['text-xs font-bold px-3 py-1.5 rounded', selectedOrder.status === 'Requested' ? 'bg-brand-tagreq text-brand-tagreqtext' : 'bg-brand-tagconf text-brand-tagconftext']">
+                            {{ selectedOrder.status }}
+                        </span>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div>
+                            <p class="text-xs text-brand-muted font-bold mb-1 uppercase">Customer</p>
+                            <p class="font-bold">{{ selectedOrder.customer_name }}</p>
+                            <p class="text-sm text-brand-dark/80">{{ selectedOrder.customer_email }}</p>
+                            <p class="text-sm text-brand-dark/80">{{ selectedOrder.customer_phone }}</p>
+                        </div>
+                        
+                        <div class="border-t border-b border-brand-dark/10 py-4">
+                            <p class="text-xs text-brand-muted font-bold mb-3 uppercase">Order Items (JSON)</p>
+                            <!-- Because cart_data is stored as JSON in the database, Vue can just iterate it -->
+                            <ul class="space-y-3">
+                                <li v-for="(item, index) in selectedOrder.cart_data" :key="index" class="flex justify-between text-sm">
+                                    <span>{{ item.qty }}x {{ item.name }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endverbatim %}
+
+            </div>
+        </div>
+    </div>
+
+    <!-- We inject the Django JSON Context directly into a script tag so Vue can read it -->
+    {{ orders_json|json_script:"orders-data" }}
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                // Grab the JSON string that Django injected into the DOM
+                const rawData = document.getElementById('orders-data').textContent;
+                return {
+                    orders: JSON.parse(rawData), // Convert back to Javascript objects!
+                    selectedOrder: null,
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Portal - Your Neighborhood Microgreens</title>
+    
+    <!-- Google Fonts & Tailwind -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], serif: ['Fraunces', 'serif'] },
+                    colors: { brand: { bg: '#F9F8F3', surface: '#EAE7DF', accent: '#D5E0D5', dark: '#19392B', primary: '#194D33', muted: '#4A695C' } }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <style>
+        body { background-color: #F5F4F0; color: #0A2E1F; }
+        .form-input { width: 100%; background-color: white; border: 1px solid #D1D5DB; border-radius: 0.5rem; padding: 0.75rem 1rem; transition: all 0.2s; }
+        .form-input:focus { outline: none; border-color: #194D33; box-shadow: 0 0 0 3px rgba(25, 77, 51, 0.1); }
+    </style>
+</head>
+<body class="antialiased font-sans">
+    <div id="app" class="max-w-md mx-auto md:max-w-2xl lg:max-w-3xl bg-brand-bg min-h-screen shadow-2xl relative">
+        
+        <!-- Header / Navbar -->
+        <header class="px-5 pt-6 pb-2 sticky top-0 bg-brand-bg/95 backdrop-blur z-20 border-b border-brand-dark/10">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-brand-accent flex items-center justify-center text-brand-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M12 3.167A4 4 0 1116.833 8h-1.666A2.333 2.333 0 0012.834 5.667H12v-2.5zM7 5a4 4 0 114 4H9.333a2.333 2.333 0 00-2.333-2.333V5z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="leading-tight">
+                        <p class="text-[10px] text-brand-muted uppercase tracking-wider font-semibold">Your Neighborhood</p>
+                        <p class="font-serif font-bold text-brand-dark">Microgreens</p>
+                    </div>
+                </div>
+                <nav class="flex gap-4 text-sm font-medium">
+                    <a href="#" @click.prevent="activeTab = 'home'" :class="[activeTab === 'home' ? 'text-brand-dark border-b-2 border-brand-primary' : 'text-brand-muted hover:text-brand-dark', 'py-2 transition-colors']">My orders</a>
+                    <a href="#" @click.prevent="activeTab = 'build'" :class="[activeTab === 'build' ? 'text-brand-dark border-b-2 border-brand-primary' : 'text-brand-muted hover:text-brand-dark', 'py-2 transition-colors']">Build an order</a>
+                </nav>
+            </div>
+        </header>
+
+        <main class="px-5 py-8 space-y-12">
+            
+            <!-- HOME TAB (Simplified for brevity) -->
+            <div v-show="activeTab === 'home'" class="space-y-12 pb-10">
+                <section class="space-y-6 relative">
+                    <h1 class="font-serif text-5xl sm:text-6xl font-bold leading-[1.1] text-brand-dark">
+                        Fresh greens, <br><span class="italic text-brand-primary">grown close to home.</span>
+                    </h1>
+                    <button @click="activeTab = 'build'" class="bg-brand-dark text-white font-bold py-4 px-8 rounded-xl">Build your order &rarr;</button>
+                </section>
+            </div>
+
+            <!-- BUILD AN ORDER TAB -->
+            <div v-show="activeTab === 'build'" class="space-y-8 pb-10">
+                
+                <section class="bg-brand-dark text-white p-6 sm:p-8 rounded-xl shadow-lg space-y-6">
+                    <h2 class="font-serif text-4xl font-bold mb-3">Build your box</h2>
+                    <p class="text-white/80 leading-relaxed text-sm">Choose single varieties or mixed packages and send your request.</p>
+                </section>
+
+                <!-- STANDARD HTML FORM WRAPPER -->
+                <form ref="orderForm" method="POST" action="">
+                    <!-- Django CSRF Token required for POST forms -->
+                    {% csrf_token %}
+                    
+                    <!-- We store the complex cart structure in a hidden field so Django can save it as JSON -->
+                    <input type="hidden" name="cart_data" :value="JSON.stringify(cartPayload)">
+
+                    <!-- Single Varieties UI -->
+                    <section class="bg-white rounded-xl shadow-sm border border-black/5 p-6 mb-8">
+                        <h3 class="font-serif text-2xl font-bold text-brand-dark mb-6">Single varieties</h3>
+                        {% verbatim %}
+                        <div class="space-y-6">
+                            <div v-for="item in singleVarieties" :key="item.id" class="border border-brand-dark/10 rounded-xl p-4">
+                                <h4 class="font-serif text-xl font-bold text-brand-dark mb-1">{{ item.name }}</h4>
+                                <div class="flex items-center justify-between mt-4">
+                                    <span class="text-sm font-medium text-brand-dark">{{ item.size }} &middot; ${{ item.price.toFixed(2) }}</span>
+                                    <div class="flex items-center bg-brand-bg border border-brand-dark/20 rounded-lg overflow-hidden h-11">
+                                        <button type="button" @click="item.qty > 0 ? item.qty-- : null" class="w-10 h-full font-bold">&minus;</button>
+                                        <div class="w-10 text-center font-bold text-brand-dark">{{ item.qty }}</div>
+                                        <button type="button" @click="item.qty++" class="w-10 h-full font-bold">&plus;</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endverbatim %}
+                    </section>
+
+                    <!-- User Details -->
+                    <section class="space-y-6">
+                        <div>
+                            <h3 class="font-serif text-xl font-bold text-brand-dark mb-4">How would you like to receive it?</h3>
+                            <div class="space-y-3">
+                                <label class="block bg-white border border-brand-dark/10 rounded-xl p-5 cursor-pointer flex gap-4">
+                                    <input type="radio" name="fulfillment" value="pickup" v-model="form.fulfillment" class="w-5 h-5 accent-brand-dark">
+                                    <div><h4 class="font-bold">Local pickup</h4></div>
+                                </label>
+                                <label class="block bg-white border border-brand-dark/10 rounded-xl p-5 cursor-pointer flex gap-4">
+                                    <input type="radio" name="fulfillment" value="delivery" v-model="form.fulfillment" class="w-5 h-5 accent-brand-dark">
+                                    <div><h4 class="font-bold">Nearby delivery</h4></div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="font-serif text-xl font-bold text-brand-dark mb-2">Your contact details</h3>
+                            <div class="space-y-5">
+                                <div>
+                                    <label class="block text-sm font-semibold mb-1">Your name</label>
+                                    <input type="text" name="name" v-model="form.name" class="form-input" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold mb-1">Contact email</label>
+                                    <input type="email" name="email" v-model="form.email" class="form-input" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold mb-1">Phone number</label>
+                                    <input type="tel" name="phone" v-model="form.phone" class="form-input">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold mb-1">Anything I should know?</label>
+                                    <textarea name="notes" v-model="form.notes" rows="3" class="form-input"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- We use a standard submit button. Vue binds to the form naturally. -->
+                        <button type="submit" class="w-full bg-brand-dark text-white font-bold py-4 rounded-xl shadow-lg hover:bg-brand-primary transition-colors text-lg">
+                            Submit Order Request
+                        </button>
+                    </section>
+                </form>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    activeTab: 'build', 
+                    form: { name: '', email: '', phone: '', notes: '', fulfillment: 'pickup' },
+                    singleVarieties: [
+                        { id: 'radish', name: 'Radish', size: '2 oz', price: 5.99, qty: 0 },
+                        { id: 'broccoli', name: 'Broccoli', size: '2 oz', price: 5.99, qty: 0 },
+                        { id: 'kale', name: 'Kale', size: '2 oz', price: 5.99, qty: 0 }
+                    ],
+                }
+            },
+            computed: {
+                // This computed property watches the cart and builds a JSON string for the hidden input
+                cartPayload() {
+                    return this.singleVarieties.filter(item => item.qty > 0);
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+
+# Database
+db.sqlite3
+
+# macOS
+.DS_Store
